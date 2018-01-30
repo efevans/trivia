@@ -1,5 +1,12 @@
 package trivia
 
+import (
+	"encoding/json"
+	"fmt"
+	"io/ioutil"
+	"net/http"
+)
+
 // QuestionType indicates the type of question (i.e. multiple choice, free type)
 type QuestionType int
 
@@ -23,11 +30,36 @@ func (qType QuestionType) String() string {
 
 // Question contains the information for a question
 type Question struct {
-	ID   int
-	Type QuestionType
+	ID       int
+	Question string
+	Value    int
+	Answer   string
 }
 
 // GetQuestion gets a trivia question
 func GetQuestion() Question {
-	return Question{ID: 4}
+	question := getQuestion()
+	return question
+}
+
+func getQuestion() Question {
+	resp, err := http.Get("http://jservice.io/api/random?count=1")
+	var questions = &[]Question{}
+
+	if err == nil {
+		defer resp.Body.Close()
+		contents, err := ioutil.ReadAll(resp.Body)
+		if err == nil {
+			bad := json.Unmarshal(contents, questions)
+			if bad != nil {
+				fmt.Println("AHHHH")
+			}
+		} else {
+			fmt.Println("woops again leeel")
+		}
+	} else {
+		fmt.Println("woops lel")
+	}
+
+	return (*questions)[0]
 }
