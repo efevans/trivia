@@ -38,31 +38,32 @@ type Question struct {
 }
 
 // GetQuestion gets a trivia question
-func GetQuestion() Question {
+func GetQuestion() *Question {
 	question := getQuestion()
 	return question
 }
 
 // Read prints out the question, and readies the Question for answering
-func (question Question) Read() {
+func (question *Question) Read() {
 	fmt.Println(question.Question)
 }
 
 // Guess checks if a propsed answer is correct
-func (question Question) Guess(answer string) {
+func (question *Question) Guess(answer string) {
 	if !question.isAnswered {
 		fmt.Println("Propsing answer with value: " + answer)
 		correct := answer == question.Answer // might need to do some trimming of non-alphanumerics and lowercasing the guess and answer to avoid questions with odd answers
 
 		if correct {
 			fmt.Println("Correct!")
+			question.isAnswered = true
 		} else {
-			fmt.Println("Incorrect. Correct Answer was: " + question.Answer)
+			fmt.Println("Incorrect. Answer was: " + question.Answer)
 		}
 	}
 }
 
-func getQuestion() Question {
+func getQuestion() *Question {
 	resp, err := http.Get("http://jservice.io/api/random?count=1")
 	var questions = &[]Question{}
 
@@ -82,5 +83,5 @@ func getQuestion() Question {
 	}
 
 	(*questions)[0].isAnswered = false
-	return (*questions)[0]
+	return &(*questions)[0]
 }
