@@ -30,16 +30,36 @@ func (qType QuestionType) String() string {
 
 // Question contains the information for a question
 type Question struct {
-	ID       int
-	Question string
-	Value    int
-	Answer   string
+	ID         int
+	Question   string
+	Value      int
+	Answer     string
+	isAnswered bool
 }
 
 // GetQuestion gets a trivia question
 func GetQuestion() Question {
 	question := getQuestion()
 	return question
+}
+
+// Read prints out the question, and readies the Question for answering
+func (question Question) Read() {
+	fmt.Println(question.Question)
+}
+
+// Guess checks if a propsed answer is correct
+func (question Question) Guess(answer string) {
+	if !question.isAnswered {
+		fmt.Println("Propsing answer with value: " + answer)
+		correct := answer == question.Answer // might need to do some trimming of non-alphanumerics and lowercasing the guess and answer to avoid questions with odd answers
+
+		if correct {
+			fmt.Println("Correct!")
+		} else {
+			fmt.Println("Incorrect. Correct Answer was: " + question.Answer)
+		}
+	}
 }
 
 func getQuestion() Question {
@@ -61,5 +81,6 @@ func getQuestion() Question {
 		fmt.Println("woops lel")
 	}
 
+	(*questions)[0].isAnswered = false
 	return (*questions)[0]
 }
