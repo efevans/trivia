@@ -1,87 +1,106 @@
 package trivia
 
-import (
-	"encoding/json"
-	"fmt"
-	"io/ioutil"
-	"net/http"
-)
+import "time"
 
-// QuestionType indicates the type of question (i.e. multiple choice, free type )
-type QuestionType int
+// Game conducts a game of trivia
+type Game struct {
+	Writer         Writer
+	QuestionGetter QuestionGetter
 
-// Specifies valid question types
-const (
-	MultipleChoice QuestionType = 0
-	FreeType       QuestionType = 1
-)
+	questions []Question
+	players   map[string]int
 
-func (qType QuestionType) String() string {
-	types := [...]string{
-		"MultipleChoice",
-		"FreeType"}
-
-	if qType < MultipleChoice || qType > FreeType {
-		return "Unknown"
-	}
-
-	return types[qType]
+	currQuestion       *Question
+	guessCh            chan guess
+	hasQuestionRunning bool
+	isRunning          bool
 }
 
-// Question contains the information for a question
+// Question defines the text and answer for a trivia question
 type Question struct {
-	ID         int
-	Question   string
-	Value      int
-	Answer     string
-	isAnswered bool
+	Text   string
+	Answer string
 }
 
-// GetQuestion gets a trivia question
-func GetQuestion() *Question {
-	question := getQuestion()
-	return question
+type player struct {
+	name  string
+	score int
 }
 
-// Read prints out the question, and readies the Question for answering
-func (question *Question) Read() {
-	fmt.Println(question.Question)
+type guess struct {
+	player string
+	guess  string
 }
 
-// Guess checks if a propsed answer is correct
-func (question *Question) Guess(answer string) {
-	if !question.isAnswered {
-		fmt.Println("Propsing answer with value: " + answer)
-		correct := answer == question.Answer // might need to do some trimming of non-alphanumerics and lowercasing the guess and answer to avoid questions with odd answers
-
-		if correct {
-			fmt.Println("Correct!")
-			question.isAnswered = true
-		} else {
-			fmt.Println("Incorrect. Answer was: " + question.Answer)
-		}
-	}
+// QuestionGetter specifies a method to get questions for trivia
+type QuestionGetter interface {
+	GetQuestions() []Question
 }
 
-func getQuestion() *Question {
-	resp, err := http.Get("http://jservice.io/api/random?count=1")
-	var questions = &[]Question{}
+// Writer is an interface that implements a writing method that will be used by trivia to output the game
+type Writer interface {
+	write(string)
+}
 
-	if err == nil {
-		defer resp.Body.Close()
-		contents, err := ioutil.ReadAll(resp.Body)
-		if err == nil {
-			bad := json.Unmarshal(contents, questions)
-			if bad != nil {
-				fmt.Println("AHHHH")
+// Start begins the game of trivia
+func (game *Game) Start() {
+	// Initialize stuff like guessing channel and list of questions
+	game.isRunning = true
+	game.guessCh = make(chan guess, 10)
+	game.players = make(map[string]int)
+	game.questions = game.QuestionGetter.GetQuestions()
+
+	// Go through each question
+	for _, currQuestion := range game.questions {
+		game.Writer.write("Next question in 3, 2, 1...")
+		time.Sleep(time.Second * 3)
+		game.Writer.write(currQuestion.Text)
+		game.hasQuestionRunning = true
+
+		// accept guesses in the allowed amount of time
+	GuessTime:
+		for {
+			select {
+			case guess := <-game.guessCh:
+				if game.checkGuess(guess) {
+					break GuessTime
+				}
+			case <-time.After(time.Second * 10):
+				break GuessTime
 			}
-		} else {
-			fmt.Println("woops again leeel")
 		}
-	} else {
-		fmt.Println("woops lel")
+
+		game.hasQuestionRunning = false
+		time.Sleep(time.Second * 2)
+	}
+}
+
+// Guess lets a player make a guess on the current answer. Answers are only allowed
+func (game *Game) Guess(answer string, player string) {
+	if game.isRunning && game.hasQuestionRunning {
+		newGuess := guess{guess: answer, player: player}
+		game.guessCh <- newGuess
+	}
+}
+
+func (game *Game) checkGuess(guess guess) bool {
+	// TODO: Track the guesser as having answered this question
+
+	if game.currQuestion.Text == guess.guess {
+		// TODO: say the player got it right and give them their score
+		game.players[guess.player]++
+		return true
 	}
 
-	(*questions)[0].isAnswered = false
-	return &(*questions)[0]
+	// TODO: say the player sucks
+	game.players[guess.player]--
+	return false
+}
+
+func (player *player) addToScore(value int) {
+	player.score += value
+}
+
+func (player *player) subractFromScore(value int) {
+	player.score -= value
 }
