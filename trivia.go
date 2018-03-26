@@ -7,7 +7,7 @@ import (
 	"net/http"
 )
 
-// QuestionType indicates the type of question (i.e. multiple choice, free type)
+// QuestionType indicates the type of question (i.e. multiple choice, free type )
 type QuestionType int
 
 // Specifies valid question types
