@@ -2,7 +2,7 @@ package trivia
 
 import "time"
 
-// Game conducts a game of trivia
+// Game conducts a game of triviaa
 type Game struct {
 	Writer         Writer
 	QuestionGetter QuestionGetter
