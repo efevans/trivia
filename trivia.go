@@ -22,11 +22,6 @@ type Question struct {
 	Answer string
 }
 
-type player struct {
-	name  string
-	score int
-}
-
 type guess struct {
 	player string
 	guess  string
@@ -95,12 +90,4 @@ func (game *Game) checkGuess(guess guess) bool {
 	// TODO: say the player sucks
 	game.players[guess.player]--
 	return false
-}
-
-func (player *player) addToScore(value int) {
-	player.score += value
-}
-
-func (player *player) subractFromScore(value int) {
-	player.score -= value
 }
